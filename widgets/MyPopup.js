@@ -100,20 +100,29 @@ define([
 
     return Popup.createSubclass([], {
         declaredClass: "caihm.myPopup",
-        constructor: function (options) {},
+        constructor: function (options) {
+
+            this.myEvents = [];
+
+            this.myEvents.push(aspect.after(this, "close", function () {
+                console.log('%ctopic:map/popup/close ', 'color: green');
+                topic.publish('map/popup/close',{
+                    type:'method'
+                });
+            }));
+
+        },
 
         postCreate: function () {
             this.inherited(arguments);
 
-            on(this._closeNode, touch.press, lang.hitch(this, function () {
+            this.myEvents.push(on(this._closeNode, touch.press, lang.hitch(this, function () {
                 console.log('%ctopic:map/popup/close ', 'color: green');
-                topic.publish('map/popup/close');
-            }));
+                topic.publish('map/popup/close',{
+                    type:'manual'
+                });
+            })));
 
-            var signal = aspect.after(this, "close", function (evt) {
-                console.log('%ctopic:map/popup/close ', 'color: green');
-                topic.publish('map/popup/close');
-            });
 
         },
 
@@ -132,6 +141,19 @@ define([
                 domConstruct.place(param, this._titleNode);
                 domClass.toggle(this._containerNode, dict.showTitle, !!param);
                 domClass.remove(this._containerNode, dict.hasPaginationMenuOpen)
+            }
+
+        },
+
+        destroy: function () {
+            this.inherited(arguments);
+
+            try {
+                while (this.myEvents.length > 0) {
+                    this.myEvents.pop().remove();
+                }
+            } catch (e) {
+                console.log('%c' + e, 'color: red');
             }
 
         }
