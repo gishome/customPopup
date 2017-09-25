@@ -187,11 +187,9 @@ define([
 
         open: function (options, refresh) {
             options = options || {}
-
             if (!options.features || (lang.isArray(options.features) && options.features.length < 1)) {
                 this.clear();
             }
-
             this.inherited(arguments);
             if (this.highlightEnabled) {
                 this._renderHeighlightGeometry();
