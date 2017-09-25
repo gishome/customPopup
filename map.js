@@ -9,6 +9,7 @@ var test;
 var layer;
 
 require([
+
     "dojo/parser",
     "dojo/dom-class",
     "dojo/dom-construct",
@@ -24,8 +25,9 @@ require([
     'esri/Graphic',
     "esri/geometry/support/jsonUtils",
     "widgets/MyPopup",
+    "esri/PopupTemplate",
     "dojo/domReady!"
-], function (parser,domClass, domConstruct, on, lang, Map, MapView, esriRequest, Point, SimpleMarkerSymbol, SimpleFillSymbol, webMercatorUtils, Graphic, geometryUtils, MyPopup) {
+], function (parser, domClass, domConstruct, on, lang, Map, MapView, esriRequest, Point, SimpleMarkerSymbol, SimpleFillSymbol, webMercatorUtils, Graphic, geometryUtils, MyPopup, PopupTemplate) {
     parser.parse();
 
     // mapManager = MapManager.getInstance({     appConfig: appConfig },
@@ -44,7 +46,7 @@ require([
         view.popup = new MyPopup();
 
         var dom = domConstruct.create('div', {innerHTML: 'customPopup, click me to trigger Action'});
-        var title  =  domConstruct.create('div', {innerHTML: 'customPopup title, click me to trigger Action'});
+        var title = domConstruct.create('div', {innerHTML: 'customPopup title, click me to trigger Action'});
 
         on(dom, "click", function (evt) {
             alert('hello');
@@ -52,11 +54,23 @@ require([
 
         on(title, "click", function (evt) {
             alert('hello');
-        })
+        });
+
+        test = new Graphic({
+            symbol: new SimpleMarkerSymbol(),
+            attributes: {
+                name: 'test',
+                address: 'test'
+            },
+            geometry: view.extent.center
+        });
 
         view
-            .popup
-            .open({title: title, content: dom, location: view.extent.center})
+            .graphics
+            .add(test);
+
+        // view     .popup     .open({title: title, content: dom, location:
+        // view.extent.center})
 
     })
 

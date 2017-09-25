@@ -10,8 +10,17 @@ define([
     'esri/widgets/Popup',
     'dojo/dom-attr',
     "dojo/dom-class",
-    'dojo/topic'
-], function (lang, touch, domConstruct, on, aspect, Popup, domAttr, domClass, topic) {
+    'dojo/topic',
+    'dojo/_base/array',
+    'dojo/promise/all',
+    'esri/Graphic',
+    "esri/geometry/Point",
+    "esri/symbols/SimpleMarkerSymbol",
+    "esri/symbols/SimpleFillSymbol",
+    'esri/symbols/PictureMarkerSymbol',
+    './ChmPopupTemplateMixin',
+    'core/css!./MyPopup.css'
+], function (lang, touch, domConstruct, on, aspect, Popup, domAttr, domClass, topic, arrayUtil, all, Graphic, Point, SimpleMarkerSymbol, SimpleFillSymbol, PictureMarkerSymbol) {
 
     var dict = {
         hidden: "esri-hidden",
@@ -96,38 +105,146 @@ define([
         featureMenuSelected: "esri-popup__feature-menu-item--selected",
         featureMenuButton: "esri-popup__feature-menu-button",
         featureMenuTitle: "esri-popup__feature-menu-title"
-    }
+    };
 
     return Popup.createSubclass([], {
+
+        customButtonId: 'custom',
+
         declaredClass: "caihm.myPopup",
         constructor: function (options) {
-
+            options = options || {};
             this.myEvents = [];
+            this
+                .myEvents
+                .push(aspect.after(this, "close", function () {
+                    console.log('%ctopic:map/popup/close ', 'color: green');
+                    topic.publish('map/popup/close', {type: 'method'});
+                }));
+            this.highlightEnabled = true;
+            this._mapView = options.mapView;
+            this._hideActionsTextNum = 4; //if the button of the footer is larger than 4,the text of the button will be hide
 
-            this.myEvents.push(aspect.after(this, "close", function () {
-                console.log('%ctopic:map/popup/close ', 'color: green');
-                topic.publish('map/popup/close',{
-                    type:'method'
-                });
+            topic.subscribe('map/popup/close', lang.hitch(this, function () {
+                this.removeHighlightGraphic();
+            }));
+        },
+
+        myActions: [
+            {
+                // This text is displayed as a tooltip
+                title: "自定义按钮",
+                // The ID by which to reference the action in the event handler
+                id: 'test',
+                // Sets the icon font used to style the action button
+                className: "esri-icon-zoom-out-magnifying-glass"
+            }, {
+                // This text is displayed as a tooltip
+                title: "周边搜索",
+                // The ID by which to reference the action in the event handler
+                id: 'searchAround',
+                // Sets the icon font used to style the action button
+                className: "esri-icon-zoom-out-magnifying-glass"
+            }
+        ],
+
+        bindEvent: function () {
+            while (this.myActions.length > 0) {
+                this
+                    .actions
+                    .push(this.myActions.pop());
+            }
+
+            this.on("trigger-action", lang.hitch(this, function (event) {
+                var actionId = event.action.id;
+                if (actionId === 'zoom-to') {
+                    console.log('zoomTo');
+                    topic.publish('popup/zoomTo');
+                } else {
+                    console.log('popup/' + actionId);
+                    topic.publish('popup/' + actionId, this);
+                }
             }));
 
         },
 
         postCreate: function () {
+            this.bindEvent();
             this.inherited(arguments);
+            this
+                .myEvents
+                .push(on(this._closeNode, touch.press, lang.hitch(this, function () {
+                    console.log('%ctopic:map/popup/close ', 'color: green');
+                    topic.publish('map/popup/close', {type: 'manual'});
+                })));
 
-            this.myEvents.push(on(this._closeNode, touch.press, lang.hitch(this, function () {
-                console.log('%ctopic:map/popup/close ', 'color: green');
-                topic.publish('map/popup/close',{
-                    type:'manual'
-                });
-            })));
-
+            this.dockOptions.position = 'bottom-center';
+            //esri-popup__action-text esri-icon-font-fallback-text
 
         },
 
+        setContent: function () {},
+
         open: function (options, refresh) {
+            options = options || {}
+
+            if (!options.features || (lang.isArray(options.features) && options.features.length < 1)) {
+                this.clear();
+            }
+
             this.inherited(arguments);
+            if (this.highlightEnabled) {
+                this._renderHeighlightGeometry();
+            }
+
+        },
+
+        getHighlightSymbol: function (graphic) {
+
+            if (graphic.symbol instanceof PictureMarkerSymbol) {
+
+                //create a highlight PictureMarkerSymbol as you like
+
+            } else {
+                if (graphic.geometry instanceof Point) {
+                    var symbol = graphic
+                        .symbol
+                        .clone();
+                    symbol.color = 'red'
+                    return symbol;
+                } else {
+                    var symbol = graphic
+                        .symbol
+                        .clone();
+                    symbol.color = 'red'
+                    return symbol;
+                }
+            }
+
+        },
+
+        _renderHeighlightGeometry: function () {
+            var graphic = this.selectedFeature;
+            // this._mapView.
+            this._highlightGraphic = new Graphic({
+                symbol: this.getHighlightSymbol(graphic),
+                geometry: graphic
+                    .geometry
+                    .clone()
+            });
+
+            this
+                .view
+                .graphics
+                .add(this._highlightGraphic)
+        },
+
+        removeHighlightGraphic: function () {
+            this
+                .view
+                .graphics
+                .remove(this._highlightGraphic);
+
         },
 
         _updateTitle: function (param) {
@@ -150,10 +267,14 @@ define([
 
             try {
                 while (this.myEvents.length > 0) {
-                    this.myEvents.pop().remove();
+                    this
+                        .myEvents
+                        .pop()
+                        .remove();
                 }
             } catch (e) {
                 console.log('%c' + e, 'color: red');
+
             }
 
         }
