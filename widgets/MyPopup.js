@@ -18,8 +18,8 @@ define([
     "esri/symbols/SimpleMarkerSymbol",
     "esri/symbols/SimpleFillSymbol",
     'esri/symbols/PictureMarkerSymbol',
-    './ChmPopupTemplateMixin',
-    'core/css!./MyPopup.css'
+    './MyPopup/ChmPopupTemplateMixin',
+    'core/css!./MyPopup/MyPopup.css'
 ], function (lang, touch, domConstruct, on, aspect, Popup, domAttr, domClass, topic, arrayUtil, all, Graphic, Point, SimpleMarkerSymbol, SimpleFillSymbol, PictureMarkerSymbol) {
 
     var dict = {
@@ -163,6 +163,7 @@ define([
                 } else {
                     console.log('popup/' + actionId);
                     topic.publish('popup/' + actionId, this);
+                    alert('popup/' + actionId);
                 }
             }));
 
@@ -192,7 +193,7 @@ define([
             }
             this.inherited(arguments);
             if (this.highlightEnabled) {
-                this._renderHeighlightGeometry();
+                this._renderHeighlightGeometry(options);
             }
 
         },
@@ -221,9 +222,9 @@ define([
 
         },
 
-        _renderHeighlightGeometry: function () {
-            var graphic = this.selectedFeature;
-            // this._mapView.
+        _renderHeighlightGeometry: function (options) {
+            this.removeHighlightGraphic();
+            var graphic = this.selectedFeature || lang.isArray(options.feautres) && options.feautres[0];
             this._highlightGraphic = new Graphic({
                 symbol: this.getHighlightSymbol(graphic),
                 geometry: graphic
@@ -246,7 +247,6 @@ define([
         },
 
         _updateTitle: function (param) {
-
             param = param || '';
             if (lang.isString(param)) {
                 domAttr.set(this._titleNode, "innerHTML", param);
@@ -257,7 +257,6 @@ define([
                 domClass.toggle(this._containerNode, dict.showTitle, !!param);
                 domClass.remove(this._containerNode, dict.hasPaginationMenuOpen)
             }
-
         },
 
         destroy: function () {

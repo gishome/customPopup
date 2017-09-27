@@ -13,10 +13,12 @@ var dojoConfig = {
         {
             name: "widgets",
             location: locationPath + 'widgets'
-        },
-        {
-            name:"core",
-            location: locationPath+'core'
+        }, {
+            name: "core",
+            location: locationPath + 'core'
+        }, {
+            name: "layer",
+            location: locationPath + 'layer'
         }
     ]
 };

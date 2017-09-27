@@ -26,6 +26,7 @@ require([
     "esri/geometry/support/jsonUtils",
     "widgets/MyPopup",
     "esri/PopupTemplate",
+
     "dojo/domReady!"
 ], function (parser, domClass, domConstruct, on, lang, Map, MapView, esriRequest, Point, SimpleMarkerSymbol, SimpleFillSymbol, webMercatorUtils, Graphic, geometryUtils, MyPopup, PopupTemplate) {
     parser.parse();
@@ -68,6 +69,10 @@ require([
         view
             .graphics
             .add(test);
+            
+        view
+            .popup
+            .open({location: test.geometry, features: [test]})
 
         // view     .popup     .open({title: title, content: dom, location:
         // view.extent.center})
